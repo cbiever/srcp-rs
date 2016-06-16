@@ -9,16 +9,6 @@ type SessionResponse struct {
 	Infos     map[string]string `json:"infos"`
 }
 
-type GeneralLocoGetRequest struct {
-	SessionId int `json:"sessionId"`
-	Bus       int `json:"bus"`
-	Address   int `json:"address"`
-}
-
-type GeneralLocoGetResponse struct {
-	Time string `json:"time"`
-}
-
 type GeneralLocoCreateRequest struct {
 	Bus                      int    `json:"bus"`
 	Address                  int    `json:"address"`
@@ -29,5 +19,30 @@ type GeneralLocoCreateRequest struct {
 }
 
 type GeneralLocoCreateResponse struct {
+	Time string `json:"time"`
+}
+
+type GeneralLocoGetRequest struct {
+	SessionId int `json:"sessionId"`
+	Bus       int `json:"bus"`
+	Address   int `json:"address"`
+}
+
+type GeneralLocoGetResponse struct {
+	Time      string `json:"time"`
+	Drivemode int    `json:"drivemode"`
+	V         int    `json:"v"`
+	Vmax      int    `json:"vMax"`
+	Function  []int  `json:"functions"`
+}
+
+type GeneralLocoUpdateRequest struct {
+	Drivemode int   `json:"drivemode"`
+	V         int   `json:"v"`
+	Vmax      int   `json:"vMax"`
+	Function  []int `json:"functions"`
+}
+
+type GeneralLocoUpdateResponse struct {
 	Time string `json:"time"`
 }

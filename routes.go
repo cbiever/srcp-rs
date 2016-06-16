@@ -19,15 +19,21 @@ var routes = Routes{
 		CreateSession,
 	},
 	Route{
+		"CreateGL",
+		"POST",
+		"/sessions/{sessionId:[0-9]+}/gls",
+		CreateGL,
+	},
+	Route{
 		"GetGL",
 		"GET",
 		"/sessions/{sessionId:[0-9]+}/busses/{bus:[0-9]+}/gls/{address:[0-9]+}",
 		GetGL,
 	},
 	Route{
-		"CreateGL",
-		"POST",
-		"/sessions/{sessionId:[0-9]+}/gls",
-		CreateGL,
+		"UpdateGL",
+		"PUT",
+		"/sessions/{sessionId:[0-9]+}/busses/{bus:[0-9]+}/gls/{address:[0-9]+}",
+		UpdateGL,
 	},
 }

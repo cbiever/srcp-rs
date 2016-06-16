@@ -1,2 +1,2 @@
 # srcp-rs
-Frontend for srcp daemons
+REST frontend for srcp daemons
