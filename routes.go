@@ -36,4 +36,10 @@ var routes = Routes{
 		"/sessions/{sessionId:[0-9]+}/busses/{bus:[0-9]+}/gls/{address:[0-9]+}",
 		UpdateGL,
 	},
+	Route{
+		"DeleteGL",
+		"DELETE",
+		"/sessions/{sessionId:[0-9]+}/busses/{bus:[0-9]+}/gls/{address:[0-9]+}",
+		DeleteGL,
+	},
 }

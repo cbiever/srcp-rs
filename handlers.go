@@ -65,8 +65,6 @@ func CreateSession(w http.ResponseWriter, r *http.Request) {
 }
 
 func CreateGL(w http.ResponseWriter, r *http.Request) {
-	var error error
-
 	//	vars := mux.Vars(r)
 
 	//	sessionId := vars["sessionId"]
@@ -74,24 +72,15 @@ func CreateGL(w http.ResponseWriter, r *http.Request) {
 	var request GeneralLocoCreateRequest
 	unmarshall(&request, r, w)
 
-	reply := send(fmt.Sprintf("INIT %d GL %d %s %d %d %d", request.Bus, request.Address, request.Protocol, request.ProtocalVersion, request.DecoderSpeedSteps, request.NumberOfDecoderFunctions))
+	srcpReply := send(fmt.Sprintf("INIT %d GL %d %s %d %d %d", request.Bus, request.Address, request.Protocol, request.ProtocalVersion, request.DecoderSpeedSteps, request.NumberOfDecoderFunctions))
 
-	message := srcp.Parse(reply)
+	message := srcp.Parse(srcpReply)
 	if message.Code == 200 {
 		w.WriteHeader(http.StatusOK)
-		var response GeneralLocoCreateResponse
-		response.Time = message.Time
-		if error = json.NewEncoder(w).Encode(response); error != nil {
-			panic(error)
-		}
+		reply(GeneralLocoCreateResponse{message.Time}, w)
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
-		var errorMessage jsonErr
-		errorMessage.Code = message.Code
-		errorMessage.Text = message.Message
-		if error = json.NewEncoder(w).Encode(errorMessage); error != nil {
-			panic(error)
-		}
+		reply(SrcpError{message.Code, message.Status, message.Message}, w)
 	}
 }
 
@@ -108,19 +97,10 @@ func GetGL(w http.ResponseWriter, r *http.Request) {
 	if message.Code == 100 {
 		w.WriteHeader(http.StatusOK)
 		glValues := srcp.ExtractGLValues(message.Message)
-		var response GeneralLocoGetResponse
-		response.Time = message.Time
-		response.Drivemode = glValues.Drivemode
-		response.V = glValues.V
-		response.Vmax = glValues.Vmax
-		response.Function = glValues.Function
-		reply(response, w)
+		reply(GeneralLocoGetResponse{message.Time, glValues.Drivemode, glValues.V, glValues.Vmax, glValues.Function}, w)
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
-		var errorMessage jsonErr
-		errorMessage.Code = message.Code
-		errorMessage.Text = message.Message
-		reply(errorMessage, w)
+		reply(SrcpError{message.Code, message.Status, message.Message}, w)
 	}
 }
 
@@ -143,15 +123,29 @@ func UpdateGL(w http.ResponseWriter, r *http.Request) {
 	message := srcp.Parse(srcpReply)
 	if message.Code == 200 {
 		w.WriteHeader(http.StatusOK)
-		var response GeneralLocoUpdateResponse
-		response.Time = message.Time
-		reply(response, w)
+		reply(GeneralLocoUpdateResponse{message.Time}, w)
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
-		var errorMessage jsonErr
-		errorMessage.Code = message.Code
-		errorMessage.Text = message.Message
-		reply(errorMessage, w)
+		reply(SrcpError{message.Code, message.Status, message.Message}, w)
+	}
+}
+
+func DeleteGL(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+
+	//	sessionId := vars["sessionId"]
+	bus := vars["bus"]
+	address := vars["address"]
+
+	srcpReply := send(fmt.Sprintf("TERM %s GL %s", bus, address))
+
+	message := srcp.Parse(srcpReply)
+	if message.Code == 200 {
+		w.WriteHeader(http.StatusOK)
+		reply(GeneralLocoUpdateResponse{message.Time}, w)
+	} else {
+		w.WriteHeader(http.StatusBadRequest)
+		reply(SrcpError{message.Code, message.Status, message.Message}, w)
 	}
 }
 
