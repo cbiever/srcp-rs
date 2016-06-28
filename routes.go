@@ -21,7 +21,7 @@ var routes = Routes{
 	Route{
 		"CreateGL",
 		"POST",
-		"/sessions/{sessionId:[0-9]+}/gls",
+		"/sessions/{sessionId:[0-9]+}/busses/{bus:[0-9]+}/gls",
 		CreateGL,
 	},
 	Route{
