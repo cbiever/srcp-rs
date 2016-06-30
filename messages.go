@@ -10,7 +10,7 @@ type Wrapper struct {
 }
 
 type Session struct {
-	SessionId int               `json:"sessionId"`
+	SessionId int               `json:"session-id"`
 	Mode      string            `json:"mode"`
 	Infos     map[string]string `json:"infos"`
 }
@@ -18,11 +18,11 @@ type Session struct {
 type GeneralLoco struct {
 	Address                  int    `json:"address"`
 	Protocol                 string `json:"protocol"`
-	ProtocalVersion          int    `json:"protocolVersion"`
-	DecoderSpeedSteps        int    `json:"decoderSpeedSteps"`
-	NumberOfDecoderFunctions int    `json:"numberOfDecoderFunctions"`
+	ProtocalVersion          int    `json:"protocol-version"`
+	DecoderSpeedSteps        int    `json:"decoder-speed-steps"`
+	NumberOfDecoderFunctions int    `json:"number-of-decoder-functions"`
 	Drivemode                int    `json:"drivemode"`
 	V                        int    `json:"v"`
-	Vmax                     int    `json:"vMax"`
+	Vmax                     int    `json:"v-max"`
 	Function                 []int  `json:"functions"`
 }
