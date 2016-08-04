@@ -1,6 +1,10 @@
 package main
 
-import "net/http"
+import (
+	"net/http"
+
+	"srcp-rs/handlers"
+)
 
 type Route struct {
 	Name        string
@@ -16,30 +20,36 @@ var routes = Routes{
 		"CreateSession",
 		"POST",
 		"/sessions",
-		CreateSession,
+		handlers.CreateSession,
 	},
 	Route{
 		"CreateGL",
 		"POST",
-		"/sessions/{sessionId:[0-9]+}/busses/{bus:[0-9]+}/gls",
-		CreateGL,
+		"/sessions/{sessionId:[0-9]+}/buses/{bus:[0-9]+}/gls",
+		handlers.CreateGL,
 	},
 	Route{
 		"GetGL",
 		"GET",
-		"/sessions/{sessionId:[0-9]+}/busses/{bus:[0-9]+}/gls/{address:[0-9]+}",
-		GetGL,
+		"/sessions/{sessionId:[0-9]+}/buses/{bus:[0-9]+}/gls/{address:[0-9]+}",
+		handlers.GetGL,
 	},
 	Route{
 		"UpdateGL",
 		"PUT",
-		"/sessions/{sessionId:[0-9]+}/busses/{bus:[0-9]+}/gls/{address:[0-9]+}",
-		UpdateGL,
+		"/sessions/{sessionId:[0-9]+}/buses/{bus:[0-9]+}/gls/{address:[0-9]+}",
+		handlers.UpdateGL,
+	},
+	Route{
+		"UpdateGL",
+		"PATCH",
+		"/sessions/{sessionId:[0-9]+}/buses/{bus:[0-9]+}/gls/{address:[0-9]+}",
+		handlers.UpdateGL,
 	},
 	Route{
 		"DeleteGL",
 		"DELETE",
-		"/sessions/{sessionId:[0-9]+}/busses/{bus:[0-9]+}/gls/{address:[0-9]+}",
-		DeleteGL,
+		"/sessions/{sessionId:[0-9]+}/buses/{bus:[0-9]+}/gls/{address:[0-9]+}",
+		handlers.DeleteGL,
 	},
 }

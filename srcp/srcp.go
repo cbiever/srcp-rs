@@ -13,18 +13,26 @@ type SrcpMessage struct {
 	Message string
 }
 
-type GLValues struct {
-	Bus       int
-	Address   int
-	Drivemode int
-	V         int
-	Vmax      int
-	Function  []int
+type GeneralLoco struct {
+	Bus                      int     `json:"bus"`
+	Address                  int     `json:"address"`
+	Protocol                 string  `json:"protocol"`
+	ProtocolVersion          int     `json:"protocol-version"`
+	DecoderSpeedSteps        int     `json:"decoder-speed-steps"`
+	NumberOfDecoderFunctions int     `json:"number-of-decoder-functions"`
+	Drivemode                int     `json:"drivemode"`
+	V                        int     `json:"v"`
+	Vmax                     int     `json:"v-max"`
+	Function                 []int   `json:"functions"`
+	LastTimestamp            float64 `json:"-"`
 }
 
-var messagePattern = regexp.MustCompile(`(\d{10}\.\d{3}) (\d{3}) (\w+)[ ]{0,1}([\w ]*)`)
+var messagePattern = regexp.MustCompile(`(\d{10}\.\d{3}) (\d{3}) ([A-Z]+)[ ]{0,1}([\w ]*)`)
 var sessionIdPattern = regexp.MustCompile(`GO (\d+)`)
-var glValuesPattern = regexp.MustCompile(`(\d+) GL (\d+) (\d) (\d+) (\d+)([ \d]*)`)
+var deviceGroupPattern = regexp.MustCompile(`\d+ (\w+)`)
+var busAndAddressPattern = regexp.MustCompile(`(\d+) \w+ (\d+)`)
+var glInitPattern = regexp.MustCompile(`(\d+) GL (\d+) ([\w]) (\d+) (\d+) (\d+)`)
+var glDescriptionPattern = regexp.MustCompile(`(\d+) GL (\d+) (\d) (\d+) (\d+)([ \d]*)`)
 
 func Parse(message string) SrcpMessage {
 	result := messagePattern.FindStringSubmatch(message)
@@ -41,16 +49,59 @@ func ExtractSessionId(message string) int {
 	return sessionId
 }
 
-func ExtractGLValues(message string) GLValues {
-	result := glValuesPattern.FindStringSubmatch(message)
-	var glValues GLValues
-	glValues.Drivemode, _ = strconv.Atoi(result[3])
-	glValues.V, _ = strconv.Atoi(result[4])
-	glValues.Vmax, _ = strconv.Atoi(result[5])
-	functions := strings.Split(strings.Trim(result[6], " "), " ")
-	glValues.Function = make([]int, len(functions))
-	for i, function := range functions {
-		glValues.Function[i], _ = strconv.Atoi(function)
+func ExtractSessionInfos(message string) map[string]string {
+	infos := make(map[string]string)
+	for _, info := range strings.Split(message, ";") {
+		keyValue := strings.Split(strings.Trim(info, " "), " ")
+		infos[keyValue[0]] = strings.TrimSpace(keyValue[1])
 	}
-	return glValues
+	return infos
+}
+
+func ExtractBusAndAddress(message string) (bus int, address int) {
+	bus = -1
+	address = -1
+	result := busAndAddressPattern.FindStringSubmatch(message)
+	if result != nil {
+		bus, _ = strconv.Atoi(result[1])
+		address, _ = strconv.Atoi(result[2])
+	}
+	return bus, address
+}
+
+func ExtractDeviceGroup(message string) string {
+	result := deviceGroupPattern.FindStringSubmatch(message)
+	if result != nil {
+		return result[1]
+	} else {
+		return ""
+	}
+}
+
+func UpdateGeneralLoco(code int, message string, gl *GeneralLoco) {
+	if code == 101 {
+		if result := glInitPattern.FindStringSubmatch(message); result != nil {
+			gl.Bus, _ = strconv.Atoi(result[1])
+			gl.Address, _ = strconv.Atoi(result[2])
+			gl.Protocol = result[3]
+			gl.ProtocolVersion, _ = strconv.Atoi(result[4])
+			gl.DecoderSpeedSteps, _ = strconv.Atoi(result[5])
+			gl.NumberOfDecoderFunctions, _ = strconv.Atoi(result[6])
+		}
+	} else if code == 100 {
+		if result := glDescriptionPattern.FindStringSubmatch(message); result != nil {
+			gl.Bus, _ = strconv.Atoi(result[1])
+			gl.Address, _ = strconv.Atoi(result[2])
+			gl.Drivemode, _ = strconv.Atoi(result[3])
+			gl.V, _ = strconv.Atoi(result[4])
+			gl.Vmax, _ = strconv.Atoi(result[5])
+			functions := strings.Split(strings.Trim(result[6], " "), " ")
+			if gl.Function == nil {
+				gl.Function = make([]int, len(functions))
+			}
+			for i, function := range functions {
+				gl.Function[i], _ = strconv.Atoi(function)
+			}
+		}
+	}
 }

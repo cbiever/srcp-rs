@@ -1,12 +1,19 @@
-package main
+package handlers
 
 type Data struct {
 	Id         string      `json:"id"`
 	Type       string      `json:"type"`
 	Attributes interface{} `json:"attributes"`
 }
+
 type Wrapper struct {
 	Data `json:"data"`
+}
+
+type InfoMessage struct {
+	Message string  `json:"message"`
+	Action  string  `json:"action"`
+	Data    Wrapper `json:"data"`
 }
 
 type Session struct {
@@ -15,14 +22,8 @@ type Session struct {
 	Infos     map[string]string `json:"infos"`
 }
 
-type GeneralLoco struct {
-	Address                  int    `json:"address"`
-	Protocol                 string `json:"protocol"`
-	ProtocalVersion          int    `json:"protocol-version"`
-	DecoderSpeedSteps        int    `json:"decoder-speed-steps"`
-	NumberOfDecoderFunctions int    `json:"number-of-decoder-functions"`
-	Drivemode                int    `json:"drivemode"`
-	V                        int    `json:"v"`
-	Vmax                     int    `json:"v-max"`
-	Function                 []int  `json:"functions"`
+type SrcpError struct {
+	Code   int    `json:"code"`
+	Status string `json:"status"`
+	Text   string `json:"text"`
 }

@@ -5,7 +5,6 @@ import (
 	"log"
 	"net/http"
 	"strconv"
-	"strings"
 
 	"srcp-rs/srcp"
 
@@ -26,18 +25,14 @@ func Info(w http.ResponseWriter, r *http.Request) {
 		panic(error)
 	}
 
-	var srcpConnection SrcpConnection
+	var srcpConnection srcp.SrcpConnection
 	var session Session
 
 	srcpConnection.Connect("localhost:4303")
 
 	srcpReply := srcpConnection.Receive()
 
-	session.Infos = make(map[string]string)
-	for _, info := range strings.Split(srcpReply, ";") {
-		keyValue := strings.Split(strings.Trim(info, " "), " ")
-		session.Infos[keyValue[0]] = keyValue[1]
-	}
+	session.Infos = srcp.ExtractSessionInfos(srcpReply)
 
 	srcpReply = srcpConnection.SendAndReceive("SET CONNECTIONMODE SRCP INFORMATION")
 
@@ -60,11 +55,10 @@ func Info(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func listenAndSend(srcpConnection *SrcpConnection, websocket *websocket.Conn) {
+func listenAndSend(srcpConnection *srcp.SrcpConnection, websocket *websocket.Conn) {
 	defer srcpConnection.Close()
 	defer websocket.Close()
 
-	var lastTimestamp float64 = 0
 	var store map[int]map[int]*srcp.GeneralLoco = make(map[int]map[int]*srcp.GeneralLoco)
 	for {
 		message := srcp.Parse(srcpConnection.Receive())
@@ -73,30 +67,33 @@ func listenAndSend(srcpConnection *SrcpConnection, websocket *websocket.Conn) {
 			log.Printf("error converting timestamp", error)
 			return
 		}
-		if timestamp > lastTimestamp {
-			if srcp.ExtractDeviceGroup(message.Message) == "GL" {
-				var gl *srcp.GeneralLoco = new(srcp.GeneralLoco)
-				srcp.UpdateGeneralLoco(message.Message, gl)
-				if store[gl.Bus] == nil {
-					store[gl.Bus] = make(map[int]*srcp.GeneralLoco)
+		if srcp.ExtractDeviceGroup(message.Message) == "GL" {
+			bus, address := srcp.ExtractBusAndAddress(message.Message)
+			if bus > -1 && address > -1 {
+				if store[bus] == nil {
+					store[bus] = make(map[int]*srcp.GeneralLoco)
 				}
-				if store[gl.Bus][gl.Address] == nil {
-					store[gl.Bus][gl.Address] = gl
-				} else {
-					gl = store[gl.Bus][gl.Address]
-					srcp.UpdateGeneralLoco(message.Message, gl)
+				var gl *srcp.GeneralLoco = store[bus][address]
+				if gl == nil {
+					gl = new(srcp.GeneralLoco)
+					store[bus][address] = gl
 				}
-				id := fmt.Sprintf("%d-%d", gl.Bus, gl.Address)
-				switch message.Code {
-				case 100:
-					websocket.WriteJSON(InfoMessage{"GL updated", "update", Wrapper{Data{id, "gl", gl}}})
-				case 101:
-					websocket.WriteJSON(InfoMessage{"GL created", "created", Wrapper{Data{id, "gl", gl}}})
-				case 102:
-					websocket.WriteJSON(InfoMessage{"GL deleted", "deleted", Wrapper{Data{id, "gl", gl}}})
+				if timestamp > gl.LastTimestamp {
+					srcp.UpdateGeneralLoco(message.Code, message.Message, gl)
+					switch message.Code {
+					case 100:
+						websocket.WriteJSON(InfoMessage{"GL updated", "update", Wrapper{Data{strconv.Itoa(address), "gl", gl}}})
+					case 101:
+						websocket.WriteJSON(InfoMessage{"GL created", "create", Wrapper{Data{strconv.Itoa(address), "gl", gl}}})
+					case 102:
+						websocket.WriteJSON(InfoMessage{"GL deleted", "delete", Wrapper{Data{strconv.Itoa(address), "gl", gl}}})
+						store[bus][address] = nil
+					}
 				}
+				gl.LastTimestamp = timestamp
+			} else {
+				log.Printf("bus: %d address: %s", bus, address)
 			}
 		}
-		lastTimestamp = timestamp
 	}
 }
