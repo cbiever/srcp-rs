@@ -11,9 +11,9 @@ type Wrapper struct {
 }
 
 type InfoMessage struct {
-	Message string  `json:"message"`
-	Action  string  `json:"action"`
-	Data    Wrapper `json:"data"`
+	Message string `json:"message"`
+	Action  string `json:"action"`
+	Data    Data   `json:"data"`
 }
 
 type Session struct {

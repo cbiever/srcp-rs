@@ -84,6 +84,7 @@ func DeleteGL(w http.ResponseWriter, r *http.Request) {
 	message := srcp.Parse(srcpReply)
 	if message.Code == 200 {
 		w.WriteHeader(http.StatusOK)
+		reply(nil, w)
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
 		reply(SrcpError{message.Code, message.Status, message.Message}, w)

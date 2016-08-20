@@ -47,7 +47,7 @@ func Info(w http.ResponseWriter, r *http.Request) {
 	message := srcp.Parse(srcpReply)
 	if message.Code == 200 {
 		session.SessionId = srcp.ExtractSessionId(message.Message)
-		websocket.WriteJSON(InfoMessage{"Info session created", "created", Wrapper{Data{fmt.Sprintf("%d", session.SessionId), "session", session}}})
+		websocket.WriteJSON(InfoMessage{"Info session created", "created", Data{fmt.Sprintf("%d", session.SessionId), "session", session}})
 		listenAndSend(&srcpConnection, websocket)
 	} else {
 		websocket.WriteJSON("")
@@ -59,7 +59,7 @@ func listenAndSend(srcpConnection *srcp.SrcpConnection, websocket *websocket.Con
 	defer srcpConnection.Close()
 	defer websocket.Close()
 
-	var store map[int]map[int]*srcp.GeneralLoco = make(map[int]map[int]*srcp.GeneralLoco)
+	var store Store
 	for {
 		message := srcp.Parse(srcpConnection.Receive())
 		timestamp, error := strconv.ParseFloat(message.Time, 64)
@@ -70,27 +70,30 @@ func listenAndSend(srcpConnection *srcp.SrcpConnection, websocket *websocket.Con
 		if srcp.ExtractDeviceGroup(message.Message) == "GL" {
 			bus, address := srcp.ExtractBusAndAddress(message.Message)
 			if bus > -1 && address > -1 {
-				if store[bus] == nil {
-					store[bus] = make(map[int]*srcp.GeneralLoco)
+				var gl = store.Get(bus, address)
+				if gl == nil && message.Code == 101 {
+					gl = store.Create(bus, address)
 				}
-				var gl *srcp.GeneralLoco = store[bus][address]
-				if gl == nil {
-					gl = new(srcp.GeneralLoco)
-					store[bus][address] = gl
-				}
-				if timestamp > gl.LastTimestamp {
-					srcp.UpdateGeneralLoco(message.Code, message.Message, gl)
-					switch message.Code {
-					case 100:
-						websocket.WriteJSON(InfoMessage{"GL updated", "update", Wrapper{Data{strconv.Itoa(address), "gl", gl}}})
-					case 101:
-						websocket.WriteJSON(InfoMessage{"GL created", "create", Wrapper{Data{strconv.Itoa(address), "gl", gl}}})
-					case 102:
-						websocket.WriteJSON(InfoMessage{"GL deleted", "delete", Wrapper{Data{strconv.Itoa(address), "gl", gl}}})
-						store[bus][address] = nil
+				if gl != nil {
+					if timestamp >= gl.LastTimestamp {
+						srcp.UpdateGeneralLoco(message.Code, message.Message, gl)
+						switch message.Code {
+						case 100:
+							if error := websocket.WriteJSON(InfoMessage{"GL updated", "update", Data{strconv.Itoa(address), "gl", gl}}); error != nil {
+								return
+							}
+						case 101:
+							if error := websocket.WriteJSON(InfoMessage{"GL created", "create", Data{strconv.Itoa(address), "gl", gl}}); error != nil {
+								return
+							}
+						case 102:
+							if error := websocket.WriteJSON(InfoMessage{"GL deleted", "delete", Data{strconv.Itoa(address), "gl", gl}}); error != nil {
+								return
+							}
+						}
 					}
+					gl.LastTimestamp = timestamp
 				}
-				gl.LastTimestamp = timestamp
 			} else {
 				log.Printf("bus: %d address: %s", bus, address)
 			}
