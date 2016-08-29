@@ -13,6 +13,10 @@ type SrcpMessage struct {
 	Message string
 }
 
+type Bus struct {
+	DeviceGroups []string `json:"deviceGroups"`
+}
+
 type GeneralLoco struct {
 	Bus                      int     `json:"bus"`
 	Address                  int     `json:"address"`
@@ -104,4 +108,14 @@ func UpdateGeneralLoco(code int, message string, gl *GeneralLoco) {
 			}
 		}
 	}
+}
+
+func ExtractDeviceGroups(message string) []string {
+	var deviceGroups []string
+	for index, deviceGroup := range strings.Split(message, " ") {
+		if index > 1 {
+			deviceGroups = append(deviceGroups, deviceGroup)
+		}
+	}
+	return deviceGroups
 }

@@ -3,7 +3,6 @@ package handlers
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 
 	"srcp-rs/srcp"
 )
@@ -20,7 +19,7 @@ func CreateGL(w http.ResponseWriter, r *http.Request) {
 	message := srcp.Parse(srcpReply)
 	if message.Code == 200 {
 		w.WriteHeader(http.StatusOK)
-		reply(Wrapper{Data{strconv.Itoa(gl.Address), "gl", gl}}, w)
+		reply(Wrapper{Data{fmt.Sprintf("%d-%d", bus, gl.Address), "gl", gl}}, w)
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
 		reply(SrcpError{message.Code, message.Status, message.Message}, w)
@@ -41,7 +40,7 @@ func GetGL(w http.ResponseWriter, r *http.Request) {
 		var gl srcp.GeneralLoco
 		srcp.UpdateGeneralLoco(message1.Code, message1.Message, &gl)
 		srcp.UpdateGeneralLoco(message2.Code, message2.Message, &gl)
-		reply(Wrapper{Data{strconv.Itoa(address), "gl", gl}}, w)
+		reply(Wrapper{Data{fmt.Sprintf("%d-%d", bus, gl.Address), "gl", gl}}, w)
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
 		if message1.Code != 101 {
@@ -69,7 +68,7 @@ func UpdateGL(w http.ResponseWriter, r *http.Request) {
 	if message.Code == 200 {
 		w.WriteHeader(http.StatusOK)
 		gl.Bus = bus
-		reply(Wrapper{Data{strconv.Itoa(address), "gl", gl}}, w)
+		reply(Wrapper{Data{fmt.Sprintf("%d-%d", bus, gl.Address), "gl", gl}}, w)
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
 		reply(SrcpError{message.Code, message.Status, message.Message}, w)

@@ -10,6 +10,10 @@ type Wrapper struct {
 	Data `json:"data"`
 }
 
+type ArrayWrapper struct {
+	Data []Data `json:"data"`
+}
+
 type InfoMessage struct {
 	Message string `json:"message"`
 	Action  string `json:"action"`

@@ -23,6 +23,18 @@ var routes = Routes{
 		handlers.CreateSession,
 	},
 	Route{
+		"GetBuses",
+		"GET",
+		"/sessions/{sessionId:[0-9]+}/buses",
+		handlers.GetBuses,
+	},
+	Route{
+		"DeleteBus",
+		"DELETE",
+		"/sessions/{sessionId:[0-9]+}/buses/{bus:[0-9]+}",
+		handlers.DeleteBus,
+	},
+	Route{
 		"CreateGL",
 		"POST",
 		"/sessions/{sessionId:[0-9]+}/buses/{bus:[0-9]+}/gls",

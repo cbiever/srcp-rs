@@ -79,15 +79,15 @@ func listenAndSend(srcpConnection *srcp.SrcpConnection, websocket *websocket.Con
 						srcp.UpdateGeneralLoco(message.Code, message.Message, gl)
 						switch message.Code {
 						case 100:
-							if error := websocket.WriteJSON(InfoMessage{"GL updated", "update", Data{strconv.Itoa(address), "gl", gl}}); error != nil {
+							if error := websocket.WriteJSON(InfoMessage{"GL updated", "update", Data{fmt.Sprintf("%d-%d", bus, address), "gl", gl}}); error != nil {
 								return
 							}
 						case 101:
-							if error := websocket.WriteJSON(InfoMessage{"GL created", "create", Data{strconv.Itoa(address), "gl", gl}}); error != nil {
+							if error := websocket.WriteJSON(InfoMessage{"GL created", "create", Data{fmt.Sprintf("%d-%d", bus, address), "gl", gl}}); error != nil {
 								return
 							}
 						case 102:
-							if error := websocket.WriteJSON(InfoMessage{"GL deleted", "delete", Data{strconv.Itoa(address), "gl", gl}}); error != nil {
+							if error := websocket.WriteJSON(InfoMessage{"GL deleted", "delete", Data{fmt.Sprintf("%d-%d", bus, address), "gl", gl}}); error != nil {
 								return
 							}
 						}
