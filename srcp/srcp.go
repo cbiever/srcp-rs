@@ -18,17 +18,17 @@ type Bus struct {
 }
 
 type GeneralLoco struct {
-	Bus                      int     `json:"bus"`
-	Address                  int     `json:"address"`
-	Protocol                 string  `json:"protocol"`
-	ProtocolVersion          int     `json:"protocol-version"`
-	DecoderSpeedSteps        int     `json:"decoder-speed-steps"`
-	NumberOfDecoderFunctions int     `json:"number-of-decoder-functions"`
-	Drivemode                int     `json:"drivemode"`
-	V                        int     `json:"v"`
-	Vmax                     int     `json:"v-max"`
-	Function                 []int   `json:"functions"`
-	LastTimestamp            float64 `json:"-"`
+	Bus                      int     `json:"bus" yaml:"-"`
+	Address                  int     `json:"address" yaml:"-"`
+	Protocol                 string  `json:"protocol" yaml:"protocol"`
+	ProtocolVersion          int     `json:"protocol-version" yaml:"protocol-version"`
+	DecoderSpeedSteps        int     `json:"decoder-speed-steps" yaml:"decoder-speed-steps"`
+	NumberOfDecoderFunctions int     `json:"number-of-decoder-functions" yaml:"number-of-decoder-functions"`
+	Drivemode                int     `json:"drivemode" yaml:"-"`
+	V                        int     `json:"v" yaml:"-"`
+	Vmax                     int     `json:"v-max" yaml:"v-max"`
+	Function                 []int   `json:"functions" yaml:"-"`
+	LastTimestamp            float64 `json:"-" yaml:"-"`
 }
 
 var messagePattern = regexp.MustCompile(`(\d{10}\.\d{3}) (\d{3}) ([A-Z]+)[ ]{0,1}([\w ]*)`)

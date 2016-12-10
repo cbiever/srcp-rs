@@ -5,30 +5,48 @@ import (
 )
 
 type Store struct {
-	store map[int]map[int]*srcp.GeneralLoco
+	connections map[int]*srcp.SrcpConnection
+	gls         map[int]map[int]*srcp.GeneralLoco
 }
 
-func (store *Store) Get(bus int, address int) *srcp.GeneralLoco {
-	if store.store != nil && store.store[bus] != nil {
-		return store.store[bus][address]
+var store Store
+
+func (store *Store) SaveConnection(sessionID int, connection *srcp.SrcpConnection) {
+	if store.connections == nil {
+		store.connections = make(map[int]*srcp.SrcpConnection)
+	}
+	store.connections[sessionID] = connection
+}
+
+func (store *Store) GetConnection(sessionID int) *srcp.SrcpConnection {
+	return store.connections[sessionID]
+}
+
+func (store *Store) GetGL(bus int, address int) *srcp.GeneralLoco {
+	if store.gls != nil && store.gls[bus] != nil {
+		return store.gls[bus][address]
 	} else {
 		return nil
 	}
 }
 
-func (store *Store) Create(bus int, address int) *srcp.GeneralLoco {
-	if store.store == nil {
-		store.store = make(map[int]map[int]*srcp.GeneralLoco)
+func (store *Store) CreateGL(bus int, address int) *srcp.GeneralLoco {
+	if store.gls == nil {
+		store.gls = make(map[int]map[int]*srcp.GeneralLoco)
 	}
-	if store.store[bus] == nil {
-		store.store[bus] = make(map[int]*srcp.GeneralLoco)
+	if store.gls[bus] == nil {
+		store.gls[bus] = make(map[int]*srcp.GeneralLoco)
 	}
-	store.store[bus][address] = new(srcp.GeneralLoco)
-	return store.store[bus][address]
+	store.gls[bus][address] = new(srcp.GeneralLoco)
+	return store.gls[bus][address]
 }
 
-func (store *Store) Delete(bus int, address int) {
-	if store.store != nil && store.store[bus] != nil {
-		store.store[bus][address] = nil
+func (store *Store) DeleteGL(bus int, address int) {
+	if store.gls != nil && store.gls[bus] != nil {
+		store.gls[bus][address] = nil
 	}
+}
+
+func (store *Store) GetGLS() map[int]map[int]*srcp.GeneralLoco {
+	return store.gls;
 }

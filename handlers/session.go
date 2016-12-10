@@ -5,11 +5,8 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-
 	"srcp-rs/srcp"
 )
-
-var srcpConnection srcp.SrcpConnection
 
 func CreateSession(w http.ResponseWriter, r *http.Request) {
 	var wrapper Wrapper
@@ -17,6 +14,7 @@ func CreateSession(w http.ResponseWriter, r *http.Request) {
 
 	unmarshal(&wrapper, &session, r, w)
 
+	var srcpConnection srcp.SrcpConnection
 	srcpConnection.Connect("localhost:4303")
 
 	srcpReply := srcpConnection.Receive()
@@ -36,6 +34,7 @@ func CreateSession(w http.ResponseWriter, r *http.Request) {
 	if message.Code == 200 {
 		w.WriteHeader(http.StatusOK)
 		session.SessionId = srcp.ExtractSessionId(message.Message)
+		store.SaveConnection(session.SessionId, &srcpConnection)
 		reply(Wrapper{Data{strconv.Itoa(session.SessionId), "session", session}}, w)
 	} else {
 		w.WriteHeader(http.StatusBadRequest)

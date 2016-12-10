@@ -9,7 +9,8 @@ import (
 )
 
 func GetBuses(w http.ResponseWriter, r *http.Request) {
-	//	session, _, _ := extract(r)
+	session, _, _ := extract(r)
+	srcpConnection := store.GetConnection(session)
 	var buses []Data
 	var bus = 1
 	for {

@@ -3,12 +3,12 @@ package handlers
 import (
 	"fmt"
 	"net/http"
-
 	"srcp-rs/srcp"
 )
 
 func CreateGL(w http.ResponseWriter, r *http.Request) {
-	_, bus, _ := extract(r)
+	session, bus, _ := extract(r)
+	srcpConnection := store.GetConnection(session)
 
 	var wrapper Wrapper
 	var gl srcp.GeneralLoco
@@ -27,7 +27,8 @@ func CreateGL(w http.ResponseWriter, r *http.Request) {
 }
 
 func GetGL(w http.ResponseWriter, r *http.Request) {
-	_, bus, address := extract(r)
+	session, bus, address := extract(r)
+	srcpConnection := store.GetConnection(session)
 
 	srcpReply1 := srcpConnection.SendAndReceive(fmt.Sprintf("GET %d DESCRIPTION GL %d", bus, address))
 	message1 := srcp.Parse(srcpReply1)
@@ -52,7 +53,8 @@ func GetGL(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateGL(w http.ResponseWriter, r *http.Request) {
-	_, bus, address := extract(r)
+	session, bus, address := extract(r)
+  srcpConnection := store.GetConnection(session)
 
 	var wrapper Wrapper
 	var gl srcp.GeneralLoco
@@ -76,7 +78,8 @@ func UpdateGL(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteGL(w http.ResponseWriter, r *http.Request) {
-	_, bus, address := extract(r)
+	session, bus, address := extract(r)
+	srcpConnection := store.GetConnection(session)
 
 	srcpReply := srcpConnection.SendAndReceive(fmt.Sprintf("TERM %d GL %d", bus, address))
 

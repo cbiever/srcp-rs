@@ -12,7 +12,7 @@ func NewRouter() *mux.Router {
 		var handler http.Handler
 
 		handler = route.HandlerFunc
-		handler = setHeader(handler)
+		handler = setContentType(handler, route.ContentType)
 		handler = Logger(handler, route.Name)
 
 		router.
@@ -25,9 +25,9 @@ func NewRouter() *mux.Router {
 	return router
 }
 
-func setHeader(inner http.Handler) http.Handler {
+func setContentType(inner http.Handler, contentType string) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		w.Header().Set("Content-Type", contentType)
 		inner.ServeHTTP(w, r)
 	})
 }

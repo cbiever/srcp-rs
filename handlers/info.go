@@ -59,7 +59,6 @@ func listenAndSend(srcpConnection *srcp.SrcpConnection, websocket *websocket.Con
 	defer srcpConnection.Close()
 	defer websocket.Close()
 
-	var store Store
 	for {
 		message := srcp.Parse(srcpConnection.Receive())
 		timestamp, error := strconv.ParseFloat(message.Time, 64)
@@ -70,9 +69,9 @@ func listenAndSend(srcpConnection *srcp.SrcpConnection, websocket *websocket.Con
 		if srcp.ExtractDeviceGroup(message.Message) == "GL" {
 			bus, address := srcp.ExtractBusAndAddress(message.Message)
 			if bus > -1 && address > -1 {
-				var gl = store.Get(bus, address)
+				var gl = store.GetGL(bus, address)
 				if gl == nil && message.Code == 101 {
-					gl = store.Create(bus, address)
+					gl = store.CreateGL(bus, address)
 				}
 				if gl != nil {
 					if timestamp >= gl.LastTimestamp {
