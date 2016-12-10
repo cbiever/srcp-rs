@@ -74,10 +74,17 @@ var routes = Routes{
 		handlers.DeleteGL,
 	},
 	Route{
-		"Configuration",
+		"GetConfiguration",
 		"GET",
-		"/configuration",
+		"/sessions/{sessionId:[0-9]+}/configuration",
 		"text/plain; charset=UTF-8",
-		handlers.Configuration,
+		handlers.GetConfiguration,
+	},
+	Route{
+		"UpdateConfiguration",
+		"POST",
+		"/sessions/{sessionId:[0-9]+}/configuration",
+		"text/plain; charset=UTF-8",
+		handlers.UpdateConfiguration,
 	},
 }
