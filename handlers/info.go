@@ -1,14 +1,13 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
+	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
-	"strconv"
-
 	"srcp-rs/srcp"
-
-	"github.com/gorilla/websocket"
+	"strconv"
 )
 
 var upgrader = websocket.Upgrader{}
@@ -28,7 +27,7 @@ func Info(w http.ResponseWriter, r *http.Request) {
 	var srcpConnection srcp.SrcpConnection
 	var session Session
 
-	srcpConnection.Connect("localhost:4303")
+	srcpConnection.Connect(store.GetSrcpEndpoint())
 
 	srcpReply := srcpConnection.Receive()
 
@@ -37,7 +36,7 @@ func Info(w http.ResponseWriter, r *http.Request) {
 	srcpReply = srcpConnection.SendAndReceive("SET CONNECTIONMODE SRCP INFORMATION")
 
 	if message := srcp.Parse(srcpReply); message.Code != 202 {
-		websocket.WriteJSON("")
+		websocket.WriteJSON(SrcpError{message.Code, message.Status, message.Message})
 		websocket.Close()
 		return
 	}
@@ -50,7 +49,7 @@ func Info(w http.ResponseWriter, r *http.Request) {
 		websocket.WriteJSON(InfoMessage{"Info session created", "created", Data{fmt.Sprintf("%d", session.SessionId), "session", session}})
 		listenAndSend(&srcpConnection, websocket)
 	} else {
-		websocket.WriteJSON("")
+		websocket.WriteJSON(SrcpError{message.Code, message.Status, message.Message})
 		websocket.Close()
 	}
 }
@@ -66,7 +65,9 @@ func listenAndSend(srcpConnection *srcp.SrcpConnection, websocket *websocket.Con
 			log.Printf("error converting timestamp", error)
 			return
 		}
-		if srcp.ExtractDeviceGroup(message.Message) == "GL" {
+		deviceGroup := srcp.ExtractDeviceGroup(message.Message)
+		switch deviceGroup {
+		case "GL":
 			bus, address := srcp.ExtractBusAndAddress(message.Message)
 			if bus > -1 && address > -1 {
 				var gl = store.GetGL(bus, address)
@@ -78,23 +79,37 @@ func listenAndSend(srcpConnection *srcp.SrcpConnection, websocket *websocket.Con
 						srcp.UpdateGeneralLoco(message.Code, message.Message, gl)
 						switch message.Code {
 						case 100:
-							if error := websocket.WriteJSON(InfoMessage{"GL updated", "update", Data{fmt.Sprintf("%d-%d", bus, address), "gl", gl}}); error != nil {
-								return
+							if err := websocket.WriteJSON(InfoMessage{"GL updated", "update", Data{fmt.Sprintf("%d-%d", bus, address), "gl", gl}}); err != nil {
+								panic(err)
 							}
 						case 101:
-							if error := websocket.WriteJSON(InfoMessage{"GL created", "create", Data{fmt.Sprintf("%d-%d", bus, address), "gl", gl}}); error != nil {
-								return
+							if err := websocket.WriteJSON(InfoMessage{"GL created", "create", Data{fmt.Sprintf("%d-%d", bus, address), "gl", gl}}); err != nil {
+								panic(err)
 							}
 						case 102:
-							if error := websocket.WriteJSON(InfoMessage{"GL deleted", "delete", Data{fmt.Sprintf("%d-%d", bus, address), "gl", gl}}); error != nil {
-								return
+							if err := websocket.WriteJSON(InfoMessage{"GL deleted", "delete", Data{fmt.Sprintf("%d-%d", bus, address), "gl", gl}}); err != nil {
+								panic(err)
 							}
 						}
 					}
 					gl.LastTimestamp = timestamp
 				}
-			} else {
-				log.Printf("bus: %d address: %s", bus, address)
+			}
+		case "GM":
+			gm, err := srcp.ExtractGM(message.Message)
+			if err != nil {
+				panic(err)
+			}
+			var data Data
+			if err := json.Unmarshal([]byte(gm.Message), &data); err != nil {
+				log.Printf("json: %s", gm.Message)
+				panic(err)
+			}
+			switch data.Type {
+			case "gl":
+				if err := websocket.WriteJSON(InfoMessage{"GL updated", "update", data}); err != nil {
+					panic(err)
+				}
 			}
 		}
 	}

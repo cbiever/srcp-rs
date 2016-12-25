@@ -1,9 +1,12 @@
 package handlers
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"srcp-rs/model"
 	"srcp-rs/srcp"
+	"strings"
 )
 
 func CreateGL(w http.ResponseWriter, r *http.Request) {
@@ -11,7 +14,7 @@ func CreateGL(w http.ResponseWriter, r *http.Request) {
 	srcpConnection := store.GetConnection(session)
 
 	var wrapper Wrapper
-	var gl srcp.GeneralLoco
+	var gl model.GeneralLoco
 	unmarshal(&wrapper, &gl, r, w)
 
 	srcpReply := srcpConnection.SendAndReceive(fmt.Sprintf("INIT %d GL %d %s %d %d %d", bus, gl.Address, gl.Protocol, gl.ProtocolVersion, gl.DecoderSpeedSteps, gl.NumberOfDecoderFunctions))
@@ -38,7 +41,7 @@ func GetGL(w http.ResponseWriter, r *http.Request) {
 
 	if message1.Code == 101 && message2.Code == 100 {
 		w.WriteHeader(http.StatusOK)
-		var gl srcp.GeneralLoco
+		var gl model.GeneralLoco
 		srcp.UpdateGeneralLoco(message1.Code, message1.Message, &gl)
 		srcp.UpdateGeneralLoco(message2.Code, message2.Message, &gl)
 		reply(Wrapper{Data{fmt.Sprintf("%d-%d", bus, gl.Address), "gl", gl}}, w)
@@ -54,10 +57,10 @@ func GetGL(w http.ResponseWriter, r *http.Request) {
 
 func UpdateGL(w http.ResponseWriter, r *http.Request) {
 	session, bus, address := extract(r)
-  srcpConnection := store.GetConnection(session)
+	srcpConnection := store.GetConnection(session)
 
 	var wrapper Wrapper
-	var gl srcp.GeneralLoco
+	var gl model.GeneralLoco
 	unmarshal(&wrapper, &gl, r, w)
 
 	request := fmt.Sprintf("SET %d GL %d %d %d %d", bus, address, gl.Drivemode, gl.V, gl.Vmax)
@@ -74,6 +77,15 @@ func UpdateGL(w http.ResponseWriter, r *http.Request) {
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
 		reply(SrcpError{message.Code, message.Status, message.Message}, w)
+	}
+
+	if existingGL := store.GetGL(bus, address); existingGL != nil && strings.Compare(existingGL.Name, gl.Name) != 0 {
+		existingGL.Name = gl.Name
+		data, error := json.Marshal(Data{fmt.Sprintf("%d-%d", bus, gl.Address), "gl", gl})
+		if error != nil {
+			panic(error)
+		}
+		srcpConnection.SendAndReceive(fmt.Sprintf("SET 0 GM 0 0 TEXT %s", string(data)))
 	}
 }
 

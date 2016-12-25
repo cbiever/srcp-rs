@@ -3,9 +3,9 @@ package handlers
 import (
 	"fmt"
 	"net/http"
-	"strconv"
-
+	"srcp-rs/model"
 	"srcp-rs/srcp"
+	"strconv"
 )
 
 func GetBuses(w http.ResponseWriter, r *http.Request) {
@@ -17,7 +17,7 @@ func GetBuses(w http.ResponseWriter, r *http.Request) {
 		srcpReply := srcpConnection.SendAndReceive(fmt.Sprintf("GET %d DESCRIPTION", bus))
 		message := srcp.Parse(srcpReply)
 		if message.Code == 100 {
-			buses = append(buses, Data{strconv.Itoa(bus), "bus", srcp.Bus{srcp.ExtractDeviceGroups(message.Message)}})
+			buses = append(buses, Data{strconv.Itoa(bus), "bus", model.Bus{srcp.ExtractDeviceGroups(message.Message)}})
 		} else {
 			w.WriteHeader(http.StatusOK)
 			reply(ArrayWrapper{buses}, w)

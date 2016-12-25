@@ -1,7 +1,10 @@
 package srcp
 
 import (
+	"errors"
+	"fmt"
 	"regexp"
+	"srcp-rs/model"
 	"strconv"
 	"strings"
 )
@@ -13,30 +16,21 @@ type SrcpMessage struct {
 	Message string
 }
 
-type Bus struct {
-	DeviceGroups []string `json:"deviceGroups"`
+type GMMessage struct {
+	Bus         int
+	SendTo      int
+	ReplyTo     int
+	MessageType string
+	Message     string
 }
 
-type GeneralLoco struct {
-	Bus                      int     `json:"bus" yaml:"-"`
-	Address                  int     `json:"address" yaml:"-"`
-	Protocol                 string  `json:"protocol" yaml:"protocol"`
-	ProtocolVersion          int     `json:"protocol-version" yaml:"protocol-version"`
-	DecoderSpeedSteps        int     `json:"decoder-speed-steps" yaml:"decoder-speed-steps"`
-	NumberOfDecoderFunctions int     `json:"number-of-decoder-functions" yaml:"number-of-decoder-functions"`
-	Drivemode                int     `json:"drivemode" yaml:"-"`
-	V                        int     `json:"v" yaml:"-"`
-	Vmax                     int     `json:"v-max" yaml:"v-max"`
-	Function                 []int   `json:"functions" yaml:"-"`
-	LastTimestamp            float64 `json:"-" yaml:"-"`
-}
-
-var messagePattern = regexp.MustCompile(`(\d{10}\.\d{3}) (\d{3}) ([A-Z]+)[ ]{0,1}([\w ]*)`)
+var messagePattern = regexp.MustCompile(`(\d{10}\.\d{3}) (\d{3}) ([A-Z]+)[ ]{0,1}(.*)`)
 var sessionIdPattern = regexp.MustCompile(`GO (\d+)`)
 var deviceGroupPattern = regexp.MustCompile(`\d+ (\w+)`)
 var busAndAddressPattern = regexp.MustCompile(`(\d+) \w+ (\d+)`)
 var glInitPattern = regexp.MustCompile(`(\d+) GL (\d+) ([\w]) (\d+) (\d+) (\d+)`)
 var glDescriptionPattern = regexp.MustCompile(`(\d+) GL (\d+) (\d) (\d+) (\d+)([ \d]*)`)
+var gmPattern = regexp.MustCompile(`(\d+) GM (\d+) (\d+) (\w+) (.*)`)
 
 func Parse(message string) SrcpMessage {
 	result := messagePattern.FindStringSubmatch(message)
@@ -82,8 +76,9 @@ func ExtractDeviceGroup(message string) string {
 	}
 }
 
-func UpdateGeneralLoco(code int, message string, gl *GeneralLoco) {
-	if code == 101 {
+func UpdateGeneralLoco(code int, message string, gl *model.GeneralLoco) {
+	switch code {
+	case 101:
 		if result := glInitPattern.FindStringSubmatch(message); result != nil {
 			gl.Bus, _ = strconv.Atoi(result[1])
 			gl.Address, _ = strconv.Atoi(result[2])
@@ -92,7 +87,7 @@ func UpdateGeneralLoco(code int, message string, gl *GeneralLoco) {
 			gl.DecoderSpeedSteps, _ = strconv.Atoi(result[5])
 			gl.NumberOfDecoderFunctions, _ = strconv.Atoi(result[6])
 		}
-	} else if code == 100 {
+	case 100:
 		if result := glDescriptionPattern.FindStringSubmatch(message); result != nil {
 			gl.Bus, _ = strconv.Atoi(result[1])
 			gl.Address, _ = strconv.Atoi(result[2])
@@ -118,4 +113,17 @@ func ExtractDeviceGroups(message string) []string {
 		}
 	}
 	return deviceGroups
+}
+
+func ExtractGM(message string) (GMMessage, error) {
+	var gm GMMessage
+	if result := gmPattern.FindStringSubmatch(message); result != nil {
+		gm.Bus, _ = strconv.Atoi(result[1])
+		gm.SendTo, _ = strconv.Atoi(result[2])
+		gm.ReplyTo, _ = strconv.Atoi(result[3])
+		gm.MessageType = result[4]
+		gm.Message = result[5]
+		return gm, nil
+	}
+	return gm, errors.New(fmt.Sprintf("Unable to parse: %s", message))
 }

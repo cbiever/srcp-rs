@@ -2,12 +2,11 @@ package handlers
 
 import (
 	"encoding/json"
+	"github.com/gorilla/mux"
 	"io"
 	"io/ioutil"
 	"net/http"
 	"strconv"
-
-	"github.com/gorilla/mux"
 )
 
 func extract(r *http.Request) (int, int, int) {

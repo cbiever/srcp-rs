@@ -7,11 +7,11 @@ import (
 )
 
 type Route struct {
-	Name         string
-	Method       string
-	Pattern      string
-	ContentType  string
-	HandlerFunc  http.HandlerFunc
+	Name        string
+	Method      string
+	Pattern     string
+	ContentType string
+	HandlerFunc http.HandlerFunc
 }
 
 type Routes []Route

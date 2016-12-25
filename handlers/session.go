@@ -3,9 +3,9 @@ package handlers
 import (
 	"fmt"
 	"net/http"
+	"srcp-rs/srcp"
 	"strconv"
 	"strings"
-	"srcp-rs/srcp"
 )
 
 func CreateSession(w http.ResponseWriter, r *http.Request) {
@@ -15,7 +15,7 @@ func CreateSession(w http.ResponseWriter, r *http.Request) {
 	unmarshal(&wrapper, &session, r, w)
 
 	var srcpConnection srcp.SrcpConnection
-	srcpConnection.Connect("localhost:4303")
+	srcpConnection.Connect(store.GetSrcpEndpoint())
 
 	srcpReply := srcpConnection.Receive()
 
