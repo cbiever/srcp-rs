@@ -14,13 +14,13 @@ func GetBuses(w http.ResponseWriter, r *http.Request) {
 	var buses []Data
 	var bus = 1
 	for {
-		srcpReply := srcpConnection.SendAndReceive(fmt.Sprintf("GET %d DESCRIPTION", bus))
-		message := srcp.Parse(srcpReply)
+		reply := srcpConnection.SendAndReceive(fmt.Sprintf("GET %d DESCRIPTION", bus))
+		message := srcp.Parse(reply)
 		if message.Code == 100 {
-			buses = append(buses, Data{strconv.Itoa(bus), "bus", model.Bus{srcp.ExtractDeviceGroups(message.Message)}})
+			buses = append(buses, Data{strconv.Itoa(bus), "bus", model.Bus{message.ExtractDeviceGroups()}})
 		} else {
 			w.WriteHeader(http.StatusOK)
-			reply(ArrayWrapper{buses}, w)
+			writeReply(ArrayWrapper{buses}, w)
 			return
 		}
 		bus++
@@ -29,5 +29,5 @@ func GetBuses(w http.ResponseWriter, r *http.Request) {
 
 func DeleteBus(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	reply(nil, w)
+	writeReply(nil, w)
 }

@@ -17,27 +17,27 @@ func CreateSession(w http.ResponseWriter, r *http.Request) {
 	var srcpConnection srcp.SrcpConnection
 	srcpConnection.Connect(store.GetSrcpEndpoint())
 
-	srcpReply := srcpConnection.Receive()
+	reply := srcpConnection.Receive()
+	message := srcp.Parse(reply)
 
-	session.Infos = srcp.ExtractSessionInfos(srcpReply)
+	session.Infos = message.ExtractSessionInfos()
 
-	srcpReply = srcpConnection.SendAndReceive(fmt.Sprintf("SET CONNECTIONMODE SRCP %s", strings.ToUpper(session.Mode)))
+	reply = srcpConnection.SendAndReceive(fmt.Sprintf("SET CONNECTIONMODE SRCP %s", strings.ToUpper(session.Mode)))
 
-	if message := srcp.Parse(srcpReply); message.Code != 202 {
-		reply(SrcpError{message.Code, message.Status, message.Message}, w)
+	if message := srcp.Parse(reply); message.Code != 202 {
+		writeReply(SrcpError{message.Code, message.Status, message.Message}, w)
 		return
 	}
 
-	srcpReply = srcpConnection.SendAndReceive("GO")
+	reply = srcpConnection.SendAndReceive("GO")
 
-	message := srcp.Parse(srcpReply)
-	if message.Code == 200 {
+	if message := srcp.Parse(reply); message.Code == 200 {
 		w.WriteHeader(http.StatusOK)
-		session.SessionId = srcp.ExtractSessionId(message.Message)
+		session.SessionId = message.ExtractSessionId()
 		store.SaveConnection(session.SessionId, &srcpConnection)
-		reply(Wrapper{Data{strconv.Itoa(session.SessionId), "session", session}}, w)
+		writeReply(Wrapper{Data{strconv.Itoa(session.SessionId), "session", session}}, w)
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
-		reply(SrcpError{message.Code, message.Status, message.Message}, w)
+		writeReply(SrcpError{message.Code, message.Status, message.Message}, w)
 	}
 }

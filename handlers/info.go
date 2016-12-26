@@ -6,6 +6,7 @@ import (
 	"github.com/gorilla/websocket"
 	"log"
 	"net/http"
+	"srcp-rs/model"
 	"srcp-rs/srcp"
 	"strconv"
 )
@@ -29,23 +30,23 @@ func Info(w http.ResponseWriter, r *http.Request) {
 
 	srcpConnection.Connect(store.GetSrcpEndpoint())
 
-	srcpReply := srcpConnection.Receive()
+	reply := srcpConnection.Receive()
+	message := srcp.Parse(reply)
 
-	session.Infos = srcp.ExtractSessionInfos(srcpReply)
+	session.Infos = message.ExtractSessionInfos()
 
-	srcpReply = srcpConnection.SendAndReceive("SET CONNECTIONMODE SRCP INFORMATION")
+	reply = srcpConnection.SendAndReceive("SET CONNECTIONMODE SRCP INFORMATION")
 
-	if message := srcp.Parse(srcpReply); message.Code != 202 {
+	if message := srcp.Parse(reply); message.Code != 202 {
 		websocket.WriteJSON(SrcpError{message.Code, message.Status, message.Message})
 		websocket.Close()
 		return
 	}
 
-	srcpReply = srcpConnection.SendAndReceive("GO")
+	reply = srcpConnection.SendAndReceive("GO")
 
-	message := srcp.Parse(srcpReply)
-	if message.Code == 200 {
-		session.SessionId = srcp.ExtractSessionId(message.Message)
+	if message := srcp.Parse(reply); message.Code == 200 {
+		session.SessionId = message.ExtractSessionId()
 		websocket.WriteJSON(InfoMessage{"Info session created", "created", Data{fmt.Sprintf("%d", session.SessionId), "session", session}})
 		listenAndSend(&srcpConnection, websocket)
 	} else {
@@ -65,10 +66,10 @@ func listenAndSend(srcpConnection *srcp.SrcpConnection, websocket *websocket.Con
 			log.Printf("error converting timestamp", error)
 			return
 		}
-		deviceGroup := srcp.ExtractDeviceGroup(message.Message)
+		deviceGroup := message.ExtractDeviceGroup()
 		switch deviceGroup {
 		case "GL":
-			bus, address := srcp.ExtractBusAndAddress(message.Message)
+			bus, address := message.ExtractBusAndAddress()
 			if bus > -1 && address > -1 {
 				var gl = store.GetGL(bus, address)
 				if gl == nil && message.Code == 101 {
@@ -76,7 +77,7 @@ func listenAndSend(srcpConnection *srcp.SrcpConnection, websocket *websocket.Con
 				}
 				if gl != nil {
 					if timestamp >= gl.LastTimestamp {
-						srcp.UpdateGeneralLoco(message.Code, message.Message, gl)
+						updateGeneralLoco(&message, gl)
 						switch message.Code {
 						case 100:
 							if err := websocket.WriteJSON(InfoMessage{"GL updated", "update", Data{fmt.Sprintf("%d-%d", bus, address), "gl", gl}}); err != nil {
@@ -96,13 +97,12 @@ func listenAndSend(srcpConnection *srcp.SrcpConnection, websocket *websocket.Con
 				}
 			}
 		case "GM":
-			gm, err := srcp.ExtractGM(message.Message)
+			gm, err := srcp.ParseGM(message.Message)
 			if err != nil {
 				panic(err)
 			}
 			var data Data
 			if err := json.Unmarshal([]byte(gm.Message), &data); err != nil {
-				log.Printf("json: %s", gm.Message)
 				panic(err)
 			}
 			switch data.Type {
@@ -111,6 +111,20 @@ func listenAndSend(srcpConnection *srcp.SrcpConnection, websocket *websocket.Con
 					panic(err)
 				}
 			}
+		}
+	}
+}
+
+func updateGeneralLoco(message *srcp.SrcpMessage, gl *model.GeneralLoco) {
+	var err error
+	switch message.Code {
+	case 101:
+		if gl.Bus, gl.Address, gl.Protocol, gl.ProtocolVersion, gl.DecoderSpeedSteps, gl.NumberOfDecoderFunctions, err = message.ExtractGLInitValues(); err != nil {
+			panic(err)
+		}
+	case 100:
+		if gl.Bus, gl.Address, gl.Drivemode, gl.V, gl.Vmax, gl.Function, err = message.ExtractGLDescriptionValues(); err != nil {
+			panic(err)
 		}
 	}
 }

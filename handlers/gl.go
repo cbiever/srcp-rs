@@ -17,40 +17,45 @@ func CreateGL(w http.ResponseWriter, r *http.Request) {
 	var gl model.GeneralLoco
 	unmarshal(&wrapper, &gl, r, w)
 
-	srcpReply := srcpConnection.SendAndReceive(fmt.Sprintf("INIT %d GL %d %s %d %d %d", bus, gl.Address, gl.Protocol, gl.ProtocolVersion, gl.DecoderSpeedSteps, gl.NumberOfDecoderFunctions))
+	reply := srcpConnection.SendAndReceive(fmt.Sprintf("INIT %d GL %d %s %d %d %d", bus, gl.Address, gl.Protocol, gl.ProtocolVersion, gl.DecoderSpeedSteps, gl.NumberOfDecoderFunctions))
 
-	message := srcp.Parse(srcpReply)
+	message := srcp.Parse(reply)
 	if message.Code == 200 {
 		w.WriteHeader(http.StatusOK)
-		reply(Wrapper{Data{fmt.Sprintf("%d-%d", bus, gl.Address), "gl", gl}}, w)
+		writeReply(Wrapper{Data{fmt.Sprintf("%d-%d", bus, gl.Address), "gl", gl}}, w)
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
-		reply(SrcpError{message.Code, message.Status, message.Message}, w)
+		writeReply(SrcpError{message.Code, message.Status, message.Message}, w)
 	}
 }
 
 func GetGL(w http.ResponseWriter, r *http.Request) {
+	var err error
 	session, bus, address := extract(r)
 	srcpConnection := store.GetConnection(session)
 
-	srcpReply1 := srcpConnection.SendAndReceive(fmt.Sprintf("GET %d DESCRIPTION GL %d", bus, address))
-	message1 := srcp.Parse(srcpReply1)
+	reply1 := srcpConnection.SendAndReceive(fmt.Sprintf("GET %d DESCRIPTION GL %d", bus, address))
+	message1 := srcp.Parse(reply1)
 
-	srcpReply2 := srcpConnection.SendAndReceive(fmt.Sprintf("GET %d GL %d", bus, address))
-	message2 := srcp.Parse(srcpReply2)
+	reply2 := srcpConnection.SendAndReceive(fmt.Sprintf("GET %d GL %d", bus, address))
+	message2 := srcp.Parse(reply2)
 
 	if message1.Code == 101 && message2.Code == 100 {
 		w.WriteHeader(http.StatusOK)
 		var gl model.GeneralLoco
-		srcp.UpdateGeneralLoco(message1.Code, message1.Message, &gl)
-		srcp.UpdateGeneralLoco(message2.Code, message2.Message, &gl)
-		reply(Wrapper{Data{fmt.Sprintf("%d-%d", bus, gl.Address), "gl", gl}}, w)
+		if gl.Bus, gl.Address, gl.Drivemode, gl.V, gl.Vmax, gl.Function, err = message1.ExtractGLDescriptionValues(); err != nil {
+			panic(err)
+		}
+		if gl.Bus, gl.Address, gl.Protocol, gl.ProtocolVersion, gl.DecoderSpeedSteps, gl.NumberOfDecoderFunctions, err = message2.ExtractGLInitValues(); err != nil {
+			panic(err)
+		}
+		writeReply(Wrapper{Data{fmt.Sprintf("%d-%d", bus, gl.Address), "gl", gl}}, w)
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
 		if message1.Code != 101 {
-			reply(SrcpError{message1.Code, message1.Status, message1.Message}, w)
+			writeReply(SrcpError{message1.Code, message1.Status, message1.Message}, w)
 		} else {
-			reply(SrcpError{message2.Code, message2.Status, message2.Message}, w)
+			writeReply(SrcpError{message2.Code, message2.Status, message2.Message}, w)
 		}
 	}
 }
@@ -67,16 +72,16 @@ func UpdateGL(w http.ResponseWriter, r *http.Request) {
 	for _, function := range gl.Function {
 		request += fmt.Sprintf(" %d", function)
 	}
-	srcpReply := srcpConnection.SendAndReceive(request)
+	reply := srcpConnection.SendAndReceive(request)
 
-	message := srcp.Parse(srcpReply)
+	message := srcp.Parse(reply)
 	if message.Code == 200 {
 		w.WriteHeader(http.StatusOK)
 		gl.Bus = bus
-		reply(Wrapper{Data{fmt.Sprintf("%d-%d", bus, gl.Address), "gl", gl}}, w)
+		writeReply(Wrapper{Data{fmt.Sprintf("%d-%d", bus, gl.Address), "gl", gl}}, w)
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
-		reply(SrcpError{message.Code, message.Status, message.Message}, w)
+		writeReply(SrcpError{message.Code, message.Status, message.Message}, w)
 	}
 
 	if existingGL := store.GetGL(bus, address); existingGL != nil && strings.Compare(existingGL.Name, gl.Name) != 0 {
@@ -93,14 +98,14 @@ func DeleteGL(w http.ResponseWriter, r *http.Request) {
 	session, bus, address := extract(r)
 	srcpConnection := store.GetConnection(session)
 
-	srcpReply := srcpConnection.SendAndReceive(fmt.Sprintf("TERM %d GL %d", bus, address))
+	reply := srcpConnection.SendAndReceive(fmt.Sprintf("TERM %d GL %d", bus, address))
 
-	message := srcp.Parse(srcpReply)
+	message := srcp.Parse(reply)
 	if message.Code == 200 {
 		w.WriteHeader(http.StatusOK)
-		reply(nil, w)
+		writeReply(nil, w)
 	} else {
 		w.WriteHeader(http.StatusBadRequest)
-		reply(SrcpError{message.Code, message.Status, message.Message}, w)
+		writeReply(SrcpError{message.Code, message.Status, message.Message}, w)
 	}
 }

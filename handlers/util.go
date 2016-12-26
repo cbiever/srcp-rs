@@ -41,7 +41,7 @@ func unmarshal(wrapper *Wrapper, payload interface{}, reader *http.Request, writ
 	}
 }
 
-func reply(response interface{}, writer http.ResponseWriter) {
+func writeReply(response interface{}, writer http.ResponseWriter) {
 	if error := json.NewEncoder(writer).Encode(response); error != nil {
 		panic(error)
 	}
