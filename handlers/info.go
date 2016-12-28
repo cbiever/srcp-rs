@@ -48,7 +48,7 @@ func Info(w http.ResponseWriter, r *http.Request) {
 	if message := srcp.Parse(reply); message.Code == 200 {
 		session.SessionId = message.ExtractSessionId()
 		websocket.WriteJSON(InfoMessage{"Info session created", "created", Data{fmt.Sprintf("%d", session.SessionId), "session", session}})
-		listenAndSend(&srcpConnection, websocket)
+		go listenAndSend(&srcpConnection, websocket)
 	} else {
 		websocket.WriteJSON(SrcpError{message.Code, message.Status, message.Message})
 		websocket.Close()
