@@ -14,7 +14,7 @@ func CreateSession(w http.ResponseWriter, r *http.Request) {
 
 	unmarshal(&wrapper, &session, r, w)
 
-	var srcpConnection srcp.SrcpConnection
+	srcpConnection := srcp.NewSrcpConnection()
 	srcpConnection.Connect(store.GetSrcpEndpoint())
 
 	reply := srcpConnection.Receive()
@@ -34,7 +34,7 @@ func CreateSession(w http.ResponseWriter, r *http.Request) {
 	if message := srcp.Parse(reply); message.Code == 200 {
 		w.WriteHeader(http.StatusOK)
 		session.SessionId = message.ExtractSessionId()
-		store.SaveConnection(session.SessionId, &srcpConnection)
+		store.SaveConnection(session.SessionId, srcpConnection)
 		writeReply(Wrapper{Data{strconv.Itoa(session.SessionId), "session", session}}, w)
 	} else {
 		w.WriteHeader(http.StatusBadRequest)

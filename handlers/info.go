@@ -25,7 +25,7 @@ func Info(w http.ResponseWriter, r *http.Request) {
 		panic(error)
 	}
 
-	var srcpConnection srcp.SrcpConnection
+	srcpConnection := srcp.NewSrcpConnection()
 	var session Session
 
 	srcpConnection.Connect(store.GetSrcpEndpoint())
@@ -48,29 +48,27 @@ func Info(w http.ResponseWriter, r *http.Request) {
 	if message := srcp.Parse(reply); message.Code == 200 {
 		session.SessionId = message.ExtractSessionId()
 		websocket.WriteJSON(InfoMessage{"Info session created", "created", Data{fmt.Sprintf("%d", session.SessionId), "session", session}})
-		go listenAndSend(&srcpConnection, websocket)
+		go listenAndSend(srcpConnection, websocket)
 	} else {
 		websocket.WriteJSON(SrcpError{message.Code, message.Status, message.Message})
 		websocket.Close()
 	}
 }
 
-func listenAndSend(srcpConnection *srcp.SrcpConnection, websocket *websocket.Conn) {
+func listenAndSend(srcpConnection srcp.SrcpConnection, websocket *websocket.Conn) {
 	defer srcpConnection.Close()
 	defer websocket.Close()
 
 	for {
 		message := srcp.Parse(srcpConnection.Receive())
-		timestamp, error := strconv.ParseFloat(message.Time, 64)
-		if error != nil {
-			log.Printf("error converting timestamp", error)
+		timestamp, err := strconv.ParseFloat(message.Time, 64)
+		if err != nil {
+			log.Printf("error converting timestamp", err)
 			return
 		}
-		deviceGroup := message.ExtractDeviceGroup()
-		switch deviceGroup {
+		switch message.ExtractDeviceGroup() {
 		case "GL":
-			bus, address := message.ExtractBusAndAddress()
-			if bus > -1 && address > -1 {
+			if bus, address, err := message.ExtractBusAndAddress(); err == nil {
 				var gl = store.GetGL(bus, address)
 				if gl == nil && message.Code == 101 {
 					gl = store.CreateGL(bus, address)
@@ -81,20 +79,25 @@ func listenAndSend(srcpConnection *srcp.SrcpConnection, websocket *websocket.Con
 						switch message.Code {
 						case 100:
 							if err := websocket.WriteJSON(InfoMessage{"GL updated", "update", Data{fmt.Sprintf("%d-%d", bus, address), "gl", gl}}); err != nil {
-								panic(err)
+								log.Println(err)
+								return
 							}
 						case 101:
 							if err := websocket.WriteJSON(InfoMessage{"GL created", "create", Data{fmt.Sprintf("%d-%d", bus, address), "gl", gl}}); err != nil {
-								panic(err)
+								log.Println(err)
+								return
 							}
 						case 102:
 							if err := websocket.WriteJSON(InfoMessage{"GL deleted", "delete", Data{fmt.Sprintf("%d-%d", bus, address), "gl", gl}}); err != nil {
-								panic(err)
+								log.Println(err)
+								return
 							}
 						}
 					}
 					gl.LastTimestamp = timestamp
 				}
+			} else {
+				log.Println(err)
 			}
 		case "GM":
 			gm, err := srcp.ParseGM(message.Message)
@@ -108,7 +111,8 @@ func listenAndSend(srcpConnection *srcp.SrcpConnection, websocket *websocket.Con
 			switch data.Type {
 			case "gl":
 				if err := websocket.WriteJSON(InfoMessage{"GL updated", "update", data}); err != nil {
-					panic(err)
+					log.Println(err)
+					return
 				}
 			}
 		}

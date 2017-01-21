@@ -2,7 +2,6 @@ package main
 
 import (
 	"net/http"
-
 	"srcp-rs/handlers"
 )
 

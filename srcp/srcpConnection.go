@@ -6,12 +6,23 @@ import (
 	"net"
 )
 
-type SrcpConnection struct {
+type SrcpConnection interface {
+	Connect(string)
+	SendAndReceive(string) string
+	Receive() string
+	Close()
+}
+
+type SrcpConnectionImpl struct {
 	connection net.Conn
 	reader     *bufio.Reader
 }
 
-func (srcpConnection *SrcpConnection) Connect(url string) {
+func NewSrcpConnection() SrcpConnection {
+	return &SrcpConnectionImpl{}
+}
+
+func (srcpConnection *SrcpConnectionImpl) Connect(url string) {
 	var error error
 	srcpConnection.connection, error = net.Dial("tcp", url)
 	if error != nil {
@@ -20,7 +31,7 @@ func (srcpConnection *SrcpConnection) Connect(url string) {
 	srcpConnection.reader = bufio.NewReader(srcpConnection.connection)
 }
 
-func (srcpConnection *SrcpConnection) SendAndReceive(request string) string {
+func (srcpConnection *SrcpConnectionImpl) SendAndReceive(request string) string {
 	log.Printf(request)
 	if _, error := srcpConnection.connection.Write([]byte(request + "\n")); error != nil {
 		panic(error)
@@ -28,7 +39,7 @@ func (srcpConnection *SrcpConnection) SendAndReceive(request string) string {
 	return srcpConnection.Receive()
 }
 
-func (srcpConnection *SrcpConnection) Receive() string {
+func (srcpConnection *SrcpConnectionImpl) Receive() string {
 	var reply string
 	var error error
 	if reply, error = srcpConnection.reader.ReadString('\n'); error != nil {
@@ -38,6 +49,6 @@ func (srcpConnection *SrcpConnection) Receive() string {
 	return reply
 }
 
-func (srcpConnection *SrcpConnection) Close() {
+func (srcpConnection *SrcpConnectionImpl) Close() {
 	srcpConnection.connection.Close()
 }

@@ -23,7 +23,7 @@ type GMMessage struct {
 	Message     string
 }
 
-var messagePattern = regexp.MustCompile(`(\d{10}\.\d{3}) (\d{3}) ([A-Z]+)[ ]{0,1}(.*)`)
+var messagePattern = regexp.MustCompile(`(\d{10}\.\d{3,}) (\d{3}) ([A-Z]+)[ ]{0,1}(.*)`)
 var sessionIdPattern = regexp.MustCompile(`GO (\d+)`)
 var deviceGroupPattern = regexp.MustCompile(`\d+ (\w+)`)
 var busAndAddressPattern = regexp.MustCompile(`(\d+) \w+ (\d+)`)
@@ -58,15 +58,15 @@ func (message *SrcpMessage) ExtractSessionInfos() map[string]string {
 	return infos
 }
 
-func (message *SrcpMessage) ExtractBusAndAddress() (bus int, address int) {
-	bus = -1
-	address = -1
+func (message *SrcpMessage) ExtractBusAndAddress() (bus int, address int, err error) {
 	result := busAndAddressPattern.FindStringSubmatch(message.Message)
 	if result != nil {
 		bus, _ = strconv.Atoi(result[1])
 		address, _ = strconv.Atoi(result[2])
+		return bus, address, nil
+	} else {
+		return -1, -1, errors.New(fmt.Sprintf("Unable to parse: %s", message.Message))
 	}
-	return bus, address
 }
 
 func (message *SrcpMessage) ExtractDeviceGroup() string {
@@ -88,7 +88,7 @@ func (message *SrcpMessage) ExtractGLInitValues() (bus int, address int, protoco
 		numberOfDecoderFunctions, _ := strconv.Atoi(result[6])
 		return bus, address, protocol, protocolVersion, decoderSpeedSteps, numberOfDecoderFunctions, nil
 	} else {
-		return 0, 0, "", 0, 0, 0, errors.New(fmt.Sprintf("Unable to parse: %s", message))
+		return 0, 0, "", 0, 0, 0, errors.New(fmt.Sprintf("Unable to parse: %s", message.Message))
 	}
 }
 
@@ -106,7 +106,7 @@ func (message *SrcpMessage) ExtractGLDescriptionValues() (bus int, address int, 
 		}
 		return bus, address, drivemode, V, Vmax, function, nil
 	} else {
-		return 0, 0, 0, 0, 0, nil, errors.New(fmt.Sprintf("Unable to parse: %s", message))
+		return 0, 0, 0, 0, 0, nil, errors.New(fmt.Sprintf("Unable to parse: %s", message.Message))
 	}
 }
 
