@@ -27,7 +27,7 @@ func UpdateConfiguration(w http.ResponseWriter, r *http.Request) {
 	if error = yaml.Unmarshal(configurationData, &configuration); error != nil {
 		panic(error)
 	}
-	session, _, _ := extract(r)
+	session, _, _, _ := extract(r)
 	srcpConnection := store.GetConnection(session)
 	for bus, gls := range configuration {
 		for address, gl := range gls {

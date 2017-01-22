@@ -10,7 +10,7 @@ import (
 )
 
 func CreateGL(w http.ResponseWriter, r *http.Request) {
-	session, bus, _ := extract(r)
+	session, bus, _, _ := extract(r)
 	srcpConnection := store.GetConnection(session)
 
 	var wrapper Wrapper
@@ -31,7 +31,7 @@ func CreateGL(w http.ResponseWriter, r *http.Request) {
 
 func GetGL(w http.ResponseWriter, r *http.Request) {
 	var err error
-	session, bus, address := extract(r)
+	session, bus, address, _ := extract(r)
 	srcpConnection := store.GetConnection(session)
 
 	reply1 := srcpConnection.SendAndReceive(fmt.Sprintf("GET %d DESCRIPTION GL %d", bus, address))
@@ -61,7 +61,7 @@ func GetGL(w http.ResponseWriter, r *http.Request) {
 }
 
 func UpdateGL(w http.ResponseWriter, r *http.Request) {
-	session, bus, address := extract(r)
+	session, bus, address, _ := extract(r)
 	srcpConnection := store.GetConnection(session)
 
 	var wrapper Wrapper
@@ -95,7 +95,7 @@ func UpdateGL(w http.ResponseWriter, r *http.Request) {
 }
 
 func DeleteGL(w http.ResponseWriter, r *http.Request) {
-	session, bus, address := extract(r)
+	session, bus, address, _ := extract(r)
 	srcpConnection := store.GetConnection(session)
 
 	reply := srcpConnection.SendAndReceive(fmt.Sprintf("TERM %d GL %d", bus, address))

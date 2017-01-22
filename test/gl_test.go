@@ -2,10 +2,7 @@ package test
 
 import (
 	"encoding/json"
-	"github.com/gorilla/mux"
 	"io/ioutil"
-	"net/http"
-	"net/http/httptest"
 	"srcp-rs/handlers"
 	"strings"
 	"testing"
@@ -41,8 +38,6 @@ const create_gl_json = `{
 
 const gl_init = "INIT 2 GL 3 N 1 28 4"
 
-var router *mux.Router = nil
-
 func Test1CreatGL(t *testing.T) {
 	sendAndReceive := func(request string) string {
 		if strings.Compare(gl_init, request) != 0 {
@@ -52,7 +47,7 @@ func Test1CreatGL(t *testing.T) {
 	}
 	handlers.GetStore().SaveConnection(1, &MockSrcpConnection{t, sendAndReceive})
 
-	w := sendRequest()
+	w := sendRequest("POST", "/sessions/1/buses/2/gls", create_gl_json)
 
 	if 200 != w.Code {
 		t.Fatalf("expected: %d got: %d", 200, w.Code)
@@ -68,7 +63,7 @@ func Test2CreatGL(t *testing.T) {
 	}
 	handlers.GetStore().SaveConnection(1, &MockSrcpConnection{t, sendAndReceive})
 
-	w := sendRequest()
+	w := sendRequest("POST", "/sessions/1/buses/2/gls", create_gl_json)
 
 	if 400 != w.Code {
 		t.Fatalf("expected: %d got: %d", 400, w.Code)
@@ -81,19 +76,4 @@ func Test2CreatGL(t *testing.T) {
 	if 400 != srcpError.Code || strings.Compare("ERROR", srcpError.Status) != 0 || strings.Compare("unknown", srcpError.Text) != 0 {
 		t.Fatal("Srcp error is not as expected")
 	}
-}
-
-func sendRequest() *httptest.ResponseRecorder {
-	if router == nil {
-		router = mux.NewRouter()
-		router.HandleFunc("/sessions/{sessionId:[0-9]+}/buses/{bus:[0-9]+}/gls", handlers.CreateGL)
-		http.Handle("/", router)
-	}
-
-	r := httptest.NewRequest("POST", "/sessions/1/buses/2/gls", strings.NewReader(create_gl_json))
-	w := httptest.NewRecorder()
-
-	router.ServeHTTP(w, r)
-
-	return w
 }
