@@ -74,8 +74,8 @@ var routes = Routes{
 	},
 	Route{
 		"UpdateCV",
-		"POST",
-		"/sessions/{sessionId:[0-9]+}/buses/{bus:[0-9]+}/gls/{address:[0-9]+}/cv/{cv:[0-9]+}",
+		"PUT",
+		"/sessions/{sessionId:[0-9]+}/buses/{bus:[0-9]+}/gls/{address:[0-9]+}/cvs/{cv:[0-9]+}",
 		"application/json; charset=UTF-8",
 		handlers.UpdateCV,
 	},

@@ -30,7 +30,7 @@ func TestUpdateCV(t *testing.T) {
 	}
 	handlers.GetStore().SaveConnection(1, &MockSrcpConnection{t, sendAndReceive})
 
-	w := sendRequest("POST", "/sessions/1/buses/2/gls/3/cv/4", update_cv_json)
+	w := sendRequest("PUT", "/sessions/1/buses/2/gls/3/cvs/4", update_cv_json)
 
 	if 200 != w.Code {
 		t.Fatalf("expected: %d got: %d", 200, w.Code)
