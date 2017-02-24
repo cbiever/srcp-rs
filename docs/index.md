@@ -1,6 +1,6 @@
-# Welcome to SRCP-RS
+# Welcome to srcp-rs
 
-SRCP-RS provides a REST interface for SRCP servers. It is a sister project to [Gember](https://github.com/cbiever/gember) which is a web application to control a model railroad.
+Srcp-rs provides a REST interface for SRCP servers. It is a sister project to [Gember](https://cbiever.github.io/gember) which is a web application to control a model railroad.
 
 ## Installation
 
@@ -13,5 +13,7 @@ It is assumed a SRCP server, e.g. [SRCPD](http://srcpd.sourceforge.net/srcpd/ind
    or user the build.sh script in the docs directory.
 
 If srcp-rs is started without arguments it connects to port 4303 on localhost. Otherwise the first argument is used to connect to the SRCP server. 
+
+Srcp-rs opens a websocket on port 4201 and the REST interface is at port 4202.
 
 Cross compilation is easy. See for an example the rpi-build.sh script in the docs directory.
